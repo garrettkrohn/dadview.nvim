@@ -13,7 +13,7 @@ endif
 " Commands
 command! -nargs=? DadView lua require('dadview').toggle(<f-args>)
 command! -nargs=? DadViewToggle lua require('dadview').toggle(<f-args>)
-command! -nargs=1 DadViewConnect lua require('dadview').set_connection(require('dadview').find_connection(<f-args>))
+command! -nargs=1 DadViewConnect lua require('dadview').set_connection(require('dadview').find_connection("<args>"))
 command! DadViewClose lua require('dadview').close()
 command! DadViewNewQuery lua require('dadview').new_query_buffer()
 command! DadViewExecute lua require('dadview').execute_query_buffer()
@@ -30,6 +30,6 @@ command! DBCancel lua require('dadview').cancel_query()
 " Debug and memory leak investigation commands
 command! DadViewDiagnoseNativeLeak lua require('dadview.debug_memory').diagnose_native_leak()
 command! DadViewStopAllMonitoring lua require('dadview.debug_memory').stop_all_monitoring()
-command! DadViewCancelAllQueries lua print(string.format("Cancelled %d queries", require('dadview.db').cancel_all_queries()))
+command! DadViewCancelAllQueries lua local db = require('dadview.db'); print(string.format("Cancelled %d queries", db.cancel_all_queries()))
 command! DadViewCheckUndoHistory lua require('dadview').check_undo_history()
 command! DadViewClearUndoHistory lua require('dadview').clear_undo_history()

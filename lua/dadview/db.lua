@@ -1,16 +1,22 @@
 local M = {}
 local adapters = require("dadview.adapters")
 
+-- Track if adapters have been loaded
+local adapters_loaded = false
+
 -- Load and register adapters
 local function load_adapters()
+	if adapters_loaded then
+		return
+	end
+	
 	-- Register PostgreSQL adapter
 	local postgresql = require("dadview.adapters.postgresql")
 	adapters.register("postgresql", postgresql)
 	adapters.register("postgres", postgresql) -- Alias
+	
+	adapters_loaded = true
 end
-
--- Initialize adapters
-load_adapters()
 
 -- Active queries registry (for cancellation)
 M.active_queries = {}
@@ -28,6 +34,8 @@ local query_counter = 0
 --   - on_exit: function(result) (callback when done)
 -- @return number: query_id for tracking/cancellation
 function M.execute_query(url, opts)
+	load_adapters() -- Ensure adapters are loaded
+	
 	opts = opts or {}
 
 	query_counter = query_counter + 1
@@ -184,16 +192,19 @@ end
 
 -- Test database connection
 function M.test_connection(url)
+	load_adapters() -- Ensure adapters are loaded
 	return adapters.test_connection(url)
 end
 
 -- Parse database URL
 function M.parse_url(url)
+	load_adapters() -- Ensure adapters are loaded
 	return adapters.parse_url(url)
 end
 
 -- Get list of tables (if adapter supports it)
 function M.get_tables(url)
+	load_adapters() -- Ensure adapters are loaded
 	local adapter, err = adapters.get_adapter(url)
 	if not adapter then
 		return nil, err
@@ -213,12 +224,15 @@ end
 
 -- Get available database adapters
 function M.available_adapters()
+	load_adapters() -- Ensure adapters are loaded
 	return adapters.available_adapters()
 end
 
 -- Execute query synchronously (blocking)
 -- Mainly for testing or simple use cases
 function M.execute_query_sync(url, query)
+	load_adapters() -- Ensure adapters are loaded
+	
 	local cmd, env
 
 	-- Write query to temp file
