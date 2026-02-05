@@ -35,11 +35,13 @@ function M.execute_query(url, opts)
 
 	-- Parse URL and build command
 	local cmd, env
+	local temp_file = nil -- Track temp file for cleanup
+	
 	if opts.is_file then
 		cmd, env = adapters.build_command(url, { file = opts.input })
 	else
 		-- Write query to temp file
-		local temp_file = vim.fn.tempname() .. ".sql"
+		temp_file = vim.fn.tempname() .. ".sql"
 		local file = io.open(temp_file, "w")
 		if file then
 			file:write(opts.input)
@@ -96,6 +98,13 @@ function M.execute_query(url, opts)
 	}, function(result)
 		-- Clean up from active queries
 		M.active_queries[query_id] = nil
+		
+		-- Clean up temp file if we created one
+		if temp_file then
+			vim.schedule(function()
+				vim.fn.delete(temp_file)
+			end)
+		end
 
 		-- Calculate runtime
 		local end_time = vim.loop.hrtime()
@@ -156,6 +165,21 @@ function M.cancel_query(query_id)
 
 	M.active_queries[query_id] = nil
 	return true
+end
+
+-- Cancel all running queries (emergency cleanup)
+function M.cancel_all_queries()
+	local count = 0
+	for query_id, query in pairs(M.active_queries) do
+		if query.job then
+			pcall(function()
+				query.job:kill(15) -- SIGTERM
+			end)
+		end
+		M.active_queries[query_id] = nil
+		count = count + 1
+	end
+	return count
 end
 
 -- Test database connection

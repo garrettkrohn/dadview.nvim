@@ -26,3 +26,10 @@ command! DadViewLastQueryInfo lua require('dadview').last_query_info()
 " These can be used as drop-in replacements if migrating from vim-dadbod
 command! -nargs=* DB lua require('dadview').execute_query_buffer()
 command! DBCancel lua require('dadview').cancel_query()
+
+" Debug and memory leak investigation commands
+command! DadViewDiagnoseNativeLeak lua require('dadview.debug_memory').diagnose_native_leak()
+command! DadViewStopAllMonitoring lua require('dadview.debug_memory').stop_all_monitoring()
+command! DadViewCancelAllQueries lua print(string.format("Cancelled %d queries", require('dadview.db').cancel_all_queries()))
+command! DadViewCheckUndoHistory lua require('dadview').check_undo_history()
+command! DadViewClearUndoHistory lua require('dadview').clear_undo_history()

@@ -288,6 +288,10 @@ function M.get_or_create_result_buffer(query_bufnr)
 	vim.api.nvim_buf_set_option(result_bufnr, "swapfile", false)
 	vim.api.nvim_buf_set_option(result_bufnr, "filetype", "dbout")
 	vim.api.nvim_buf_set_option(result_bufnr, "modifiable", false)
+	
+	-- CRITICAL: Disable undo history to prevent memory leak
+	-- Each query result creates a new undo state, holding entire buffer in native memory
+	vim.api.nvim_buf_set_option(result_bufnr, "undolevels", -1)
 
 	-- Set buffer name
 	vim.api.nvim_buf_set_name(result_bufnr, "DadView Results")
@@ -300,6 +304,16 @@ function M.get_or_create_result_buffer(query_bufnr)
 	vim.keymap.set("n", "q", function()
 		M.quit_all()
 	end, vim.tbl_extend("force", result_opts, { desc = "Quit DadView" }))
+
+	-- Navigate to next | with C-n
+	vim.keymap.set("n", "<C-n>", function()
+		vim.fn.search("|", "W")
+	end, vim.tbl_extend("force", result_opts, { desc = "Go to next |" }))
+
+	-- Navigate to previous | with C-p
+	vim.keymap.set("n", "<C-p>", function()
+		vim.fn.search("|", "bW")
+	end, vim.tbl_extend("force", result_opts, { desc = "Go to previous |" }))
 
 	-- Open result buffer in a split
 	local current_win = vim.api.nvim_get_current_win()
@@ -351,6 +365,16 @@ function M.setup_query_buffer_keymaps(bufnr)
 	vim.keymap.set("n", "q", function()
 		M.quit_all()
 	end, vim.tbl_extend("force", opts, { desc = "Quit DadView" }))
+
+	-- Navigate to next | with C-n
+	vim.keymap.set("n", "<C-n>", function()
+		vim.fn.search("|", "W")
+	end, vim.tbl_extend("force", opts, { desc = "Go to next |" }))
+
+	-- Navigate to previous | with C-p
+	vim.keymap.set("n", "<C-p>", function()
+		vim.fn.search("|", "bW")
+	end, vim.tbl_extend("force", opts, { desc = "Go to previous |" }))
 
 	-- TODO: Execute selection in visual mode
 	-- vim.keymap.set('v', '<leader>r', function() M.execute_selection() end,
@@ -649,6 +673,62 @@ function M.show_help()
 	vim.keymap.set("n", "q", function()
 		vim.api.nvim_win_close(win, true)
 	end, close_opts)
+end
+
+-- Check undo history for result buffer
+function M.check_undo_history()
+	if not M.state.result_bufnr or not vim.api.nvim_buf_is_valid(M.state.result_bufnr) then
+		print("DadView: No result buffer found")
+		return
+	end
+	
+	local bufnr = M.state.result_bufnr
+	local undo_info = vim.fn.undotree(bufnr)
+	
+	print("=== Result Buffer Undo History ===")
+	print(string.format("Buffer: %d", bufnr))
+	print(string.format("Lines: %d", vim.api.nvim_buf_line_count(bufnr)))
+	print(string.format("Undolevels setting: %d", vim.api.nvim_buf_get_option(bufnr, "undolevels")))
+	
+	if undo_info and undo_info.entries then
+		local count = #undo_info.entries
+		print(string.format("Undo states: %d", count))
+		
+		if count > 10 then
+			print("⚠️  WARNING: " .. count .. " undo states detected!")
+			print("Each state may hold a full copy of query results in native memory")
+			print("This is likely your memory leak!")
+		elseif count > 0 then
+			print("Some undo states exist (may contribute to memory usage)")
+		else
+			print("✓ No undo states (good!)")
+		end
+	else
+		print("✓ Undo disabled or no history")
+	end
+end
+
+-- Clear undo history for result buffer
+function M.clear_undo_history()
+	if not M.state.result_bufnr or not vim.api.nvim_buf_is_valid(M.state.result_bufnr) then
+		print("DadView: No result buffer found")
+		return
+	end
+	
+	local bufnr = M.state.result_bufnr
+	local old_undolevels = vim.api.nvim_buf_get_option(bufnr, "undolevels")
+	
+	-- Clear undo history by setting undolevels to -1 temporarily
+	vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
+	vim.api.nvim_buf_set_option(bufnr, "modifiable", true)
+	vim.cmd(string.format("buffer %d | execute 'normal! a \\<BS>\\<Esc>'", bufnr))
+	vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
+	
+	-- Keep undo disabled
+	print("DadView: Undo history cleared and disabled for result buffer")
+	collectgarbage("collect")
+	collectgarbage("collect")
+	print("DadView: Forced garbage collection")
 end
 
 -- Placeholder functions
