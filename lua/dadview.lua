@@ -25,20 +25,20 @@ M.config = {
 -- Setup function for user configuration
 function M.setup(opts)
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-	
+
 	-- Set up autocmd to detect SQL files in the dadbod directory
 	local data_dir = vim.fn.stdpath("data")
 	local buffer_dir = data_dir .. "/dadbod"
-	
-	vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+
+	vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 		pattern = buffer_dir .. "/*.sql",
 		callback = function(args)
 			local bufnr = args.buf
-			
+
 			-- Mark as DadView query buffer if not already marked
 			if not vim.b[bufnr].dadview_query_buffer then
 				vim.b[bufnr].dadview_query_buffer = true
-				
+
 				-- Set up auto-execute on save if enabled
 				if M.config.auto_execute_on_save then
 					local augroup = vim.api.nvim_create_augroup("DadView_" .. bufnr, { clear = true })
@@ -51,7 +51,7 @@ function M.setup(opts)
 						desc = "DadView: Auto-execute query on save",
 					})
 				end
-				
+
 				-- Set up buffer keymaps
 				M.setup_query_buffer_keymaps(bufnr)
 			end
@@ -288,7 +288,7 @@ function M.get_or_create_result_buffer(query_bufnr)
 	vim.api.nvim_buf_set_option(result_bufnr, "swapfile", false)
 	vim.api.nvim_buf_set_option(result_bufnr, "filetype", "dbout")
 	vim.api.nvim_buf_set_option(result_bufnr, "modifiable", false)
-	
+
 	-- CRITICAL: Disable undo history to prevent memory leak
 	-- Each query result creates a new undo state, holding entire buffer in native memory
 	vim.api.nvim_buf_set_option(result_bufnr, "undolevels", -1)
@@ -505,7 +505,7 @@ function M.quit_all()
 	-- Clear state
 	M.state.result_bufnr = nil
 	M.state.result_winnr = nil
-	
+
 	-- Simply quit Neovim
 	vim.cmd("qa")
 end
@@ -681,19 +681,19 @@ function M.check_undo_history()
 		print("DadView: No result buffer found")
 		return
 	end
-	
+
 	local bufnr = M.state.result_bufnr
 	local undo_info = vim.fn.undotree(bufnr)
-	
+
 	print("=== Result Buffer Undo History ===")
 	print(string.format("Buffer: %d", bufnr))
 	print(string.format("Lines: %d", vim.api.nvim_buf_line_count(bufnr)))
 	print(string.format("Undolevels setting: %d", vim.api.nvim_buf_get_option(bufnr, "undolevels")))
-	
+
 	if undo_info and undo_info.entries then
 		local count = #undo_info.entries
 		print(string.format("Undo states: %d", count))
-		
+
 		if count > 10 then
 			print("⚠️  WARNING: " .. count .. " undo states detected!")
 			print("Each state may hold a full copy of query results in native memory")
@@ -714,16 +714,16 @@ function M.clear_undo_history()
 		print("DadView: No result buffer found")
 		return
 	end
-	
+
 	local bufnr = M.state.result_bufnr
 	local old_undolevels = vim.api.nvim_buf_get_option(bufnr, "undolevels")
-	
+
 	-- Clear undo history by setting undolevels to -1 temporarily
 	vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
 	vim.api.nvim_buf_set_option(bufnr, "modifiable", true)
 	vim.cmd(string.format("buffer %d | execute 'normal! a \\<BS>\\<Esc>'", bufnr))
 	vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
-	
+
 	-- Keep undo disabled
 	print("DadView: Undo history cleared and disabled for result buffer")
 	collectgarbage("collect")
