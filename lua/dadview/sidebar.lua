@@ -6,7 +6,6 @@ local config = require("dadview.config")
 local state = require("dadview.state")
 
 function M.toggle(connection_name) -- If connection name provided, just connect without toggling sidebar
-	-- print(connection_name)
 	if connection_name then
 		local conn = connections.find_connection(connection_name)
 		if conn then
@@ -46,7 +45,7 @@ function M.open()
 		M.render()
 
 		-- Set up keymaps
-		keymaps.setup_keymaps()
+		keymaps.setup_sidebar_keymaps(state.state.bufnr)
 	end
 
 	-- Create split window
@@ -110,11 +109,11 @@ function M.render()
 	table.insert(lines, "[ Available Connections ]")
 	table.insert(lines, "")
 
-	if #connections.state.connections == 0 then
+	if #state.state.connections == 0 then
 		table.insert(lines, "  -- No connections configured --")
 		table.insert(lines, "  Configure via vim.g.dbs")
 	else
-		for i, conn in ipairs(connections.state.connections) do
+		for i, conn in ipairs(state.state.connections) do
 			local prefix = "  "
 			if state.state.current_connection and conn.name == state.state.current_connection.name then
 				prefix = "● "
@@ -134,6 +133,96 @@ function M.render()
 
 	-- Make buffer read-only
 	vim.api.nvim_buf_set_option(state.state.bufnr, "modifiable", false)
+end
+
+-- Quit the entire plugin (quit Neovim)
+function M.quit_all()
+	-- Clear state
+	state.state.result_bufnr = nil
+	state.state.result_winnr = nil
+
+	-- Simply quit Neovim
+	vim.cmd("qa")
+end
+
+-- Get connection from current line
+function M.get_connection_at_cursor()
+	local line = vim.api.nvim_get_current_line()
+
+	-- Try to extract connection number (format: "  1. connection_name" or "● 1. connection_name")
+	local num = line:match("^[● ]*(%d+)%.")
+	if num then
+		local idx = tonumber(num)
+		if idx and state.state.connections[idx] then
+			return state.state.connections[idx]
+		end
+	end
+
+	return nil
+end
+
+-- Connect to selected database
+function M.connect_at_cursor()
+	local conn = M.get_connection_at_cursor()
+	if conn then
+		connections.set_connection(conn, { open_query_buffer = config.config.auto_open_query_buffer })
+	else
+		print("DadView: No connection on this line")
+	end
+end
+
+-- Show help
+function M.show_help()
+	local help_lines = {
+		"DadView - Help",
+		"",
+		"Keymaps:",
+		"  <CR> - Connect to database under cursor",
+		"  q    - Close DadView",
+		"  R    - Refresh connection list",
+		"  ?    - Show this help",
+		"",
+		"Commands:",
+		"  :DadView [connection]",
+		"      Toggle UI, optionally connect to named connection",
+		"  :DadViewConnect <connection>",
+		"      Connect to a database by name",
+		"",
+		"Configuration:",
+		"  Set vim.g.dbs to a list of connections:",
+		"  vim.g.dbs = {",
+		'    { name = "local", url = "postgresql://..." },',
+		'    { name = "dev", url = "postgresql://..." },',
+		"  }",
+		"",
+		"Press <Esc> to close...",
+	}
+
+	-- Create floating window for help
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_lines)
+	vim.api.nvim_buf_set_option(buf, "modifiable", false)
+
+	local width = 60
+	local height = #help_lines
+	local win = vim.api.nvim_open_win(buf, true, {
+		relative = "editor",
+		width = width,
+		height = height,
+		col = (vim.o.columns - width) / 2,
+		row = (vim.o.lines - height) / 2,
+		style = "minimal",
+		border = "rounded",
+	})
+
+	-- Close on Esc or q
+	local close_opts = { noremap = true, silent = true, buffer = buf }
+	vim.keymap.set("n", "<esc>", function()
+		vim.api.nvim_win_close(win, true)
+	end, close_opts)
+	vim.keymap.set("n", "q", function()
+		vim.api.nvim_win_close(win, true)
+	end, close_opts)
 end
 
 return M

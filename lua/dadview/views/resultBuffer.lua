@@ -42,20 +42,8 @@ function M.get_or_create_result_buffer(query_bufnr)
 	vim.b[result_bufnr].dadview_result_buffer = true
 
 	-- Set up keymaps for result buffer
-	local result_opts = { noremap = true, silent = true, buffer = result_bufnr }
-	vim.keymap.set("n", "q", function()
-		M.quit_all()
-	end, vim.tbl_extend("force", result_opts, { desc = "Quit DadView" }))
-
-	-- Navigate to next | with C-n
-	vim.keymap.set("n", "<C-n>", function()
-		vim.fn.search("|", "W")
-	end, vim.tbl_extend("force", result_opts, { desc = "Go to next |" }))
-
-	-- Navigate to previous | with C-p
-	vim.keymap.set("n", "<C-p>", function()
-		vim.fn.search("|", "bW")
-	end, vim.tbl_extend("force", result_opts, { desc = "Go to previous |" }))
+	local keymaps = require("dadview.keymaps")
+	keymaps.setup_result_buffer_keymaps(result_bufnr)
 
 	-- Open result buffer in a split
 	local current_win = vim.api.nvim_get_current_win()

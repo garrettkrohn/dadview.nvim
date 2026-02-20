@@ -99,4 +99,23 @@ function M.execute_query_buffer(bufnr)
 	state.state.active_queries[bufnr] = query_id
 end
 
+-- Cancel query for buffer
+function M.cancel_query(bufnr)
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+	local query_id = state.state.active_queries[bufnr]
+	if not query_id then
+		print("DadView: No active query for this buffer")
+		return
+	end
+
+	local success, err = db.cancel_query(query_id)
+	if success then
+		state.state.active_queries[bufnr] = nil
+		print("DadView: Query cancelled")
+	else
+		print("DadView: Failed to cancel query: " .. (err or "unknown error"))
+	end
+end
+
 return M

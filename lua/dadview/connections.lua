@@ -3,19 +3,15 @@ local state = require("dadview.state")
 local db = require("dadview.db")
 local queryBuffer = require("dadview.views.queryBuffer")
 
-M.state = {
-	connections = {},
-}
-
 -- Load connections from vim.g.dbs
 function M.load_connections()
 	local dbs = vim.g.dbs
 	if not dbs or type(dbs) ~= "table" then
-		M.state.connections = {}
+		state.state.connections = {}
 		return
 	end
 
-	M.state.connections = dbs
+	state.state.connections = dbs
 end
 
 -- Find connection by name (supports partial matching)
@@ -27,7 +23,7 @@ function M.find_connection(pattern)
 	end
 
 	-- First try exact match
-	for _, conn in ipairs(M.state.connections) do
+	for _, conn in ipairs(state.state.connections) do
 		if conn.name == pattern then
 			return conn
 		end
@@ -35,7 +31,7 @@ function M.find_connection(pattern)
 
 	-- Then try partial match (case insensitive)
 	local pattern_lower = pattern:lower()
-	for _, conn in ipairs(M.state.connections) do
+	for _, conn in ipairs(state.state.connections) do
 		if conn.name:lower():match(pattern_lower) then
 			return conn
 		end
