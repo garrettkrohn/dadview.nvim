@@ -9,12 +9,12 @@ local function load_adapters()
 	if adapters_loaded then
 		return
 	end
-	
+
 	-- Register PostgreSQL adapter
 	local postgresql = require("dadview.adapters.postgresql")
 	adapters.register("postgresql", postgresql)
 	adapters.register("postgres", postgresql) -- Alias
-	
+
 	adapters_loaded = true
 end
 
@@ -35,7 +35,7 @@ local query_counter = 0
 -- @return number: query_id for tracking/cancellation
 function M.execute_query(url, opts)
 	load_adapters() -- Ensure adapters are loaded
-	
+
 	opts = opts or {}
 
 	query_counter = query_counter + 1
@@ -44,7 +44,7 @@ function M.execute_query(url, opts)
 	-- Parse URL and build command
 	local cmd, env
 	local temp_file = nil -- Track temp file for cleanup
-	
+
 	if opts.is_file then
 		cmd, env = adapters.build_command(url, { file = opts.input })
 	else
@@ -106,7 +106,7 @@ function M.execute_query(url, opts)
 	}, function(result)
 		-- Clean up from active queries
 		M.active_queries[query_id] = nil
-		
+
 		-- Clean up temp file if we created one
 		if temp_file then
 			vim.schedule(function()
@@ -232,7 +232,7 @@ end
 -- Mainly for testing or simple use cases
 function M.execute_query_sync(url, query)
 	load_adapters() -- Ensure adapters are loaded
-	
+
 	local cmd, env
 
 	-- Write query to temp file
