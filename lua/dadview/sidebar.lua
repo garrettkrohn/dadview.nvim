@@ -142,7 +142,7 @@ function M.quit_all()
 	state.state.result_winnr = nil
 
 	-- Simply quit Neovim
-	vim.cmd("qa")
+	vim.cmd("qa!")
 end
 
 -- Get connection from current line

@@ -4,7 +4,7 @@ M.default_global_keymaps = {
 	["Toggle DadView"] = {
 		"<leader>db",
 		function()
-			require("dadview").toggle()
+			require("dadview.sidebar").toggle()
 		end,
 	},
 }
