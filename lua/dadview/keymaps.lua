@@ -102,6 +102,13 @@ M.default_result_keymaps = {
 		end,
 		prefix = false,
 	},
+	["Toggle split direction"] = {
+		"<C-w>t",
+		function()
+			require("dadview.views.resultBuffer").toggle_split_direction()
+		end,
+		prefix = false,
+	},
 	["Quit all"] = {
 		"q",
 		function()

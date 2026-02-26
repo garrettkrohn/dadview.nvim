@@ -4,6 +4,28 @@ local config = require("dadview.config")
 local keymap = require("dadview.keymaps")
 local executor = require("dadview.executor")
 
+-- Find the most recent query file for the current connection
+local function find_most_recent_query_file()
+	local conn_name = state.state.current_connection and state.state.current_connection.name or "unknown"
+	local data_dir = vim.fn.stdpath("data")
+	local buffer_dir = data_dir .. "/dadbod"
+	
+	-- Get all SQL files for this connection
+	local pattern = buffer_dir .. "/query_" .. conn_name .. "_*.sql"
+	local files = vim.fn.glob(pattern, false, true)
+	
+	if #files == 0 then
+		return nil
+	end
+	
+	-- Sort by modification time (most recent first)
+	table.sort(files, function(a, b)
+		return vim.fn.getftime(a) > vim.fn.getftime(b)
+	end)
+	
+	return files[1]
+end
+
 -- Create a new query buffer
 function M.new_query_buffer()
 	-- Open the buffer in a window first
@@ -15,6 +37,24 @@ function M.new_query_buffer()
 				vim.api.nvim_set_current_win(win)
 				break
 			end
+		end
+	end
+
+	-- Check if we should reuse the most recent query file
+	if config.config.reuse_query_buffer then
+		local recent_file = find_most_recent_query_file()
+		if recent_file then
+			-- Open the existing file
+			vim.cmd("edit " .. vim.fn.fnameescape(recent_file))
+			local bufnr = vim.api.nvim_get_current_buf()
+			
+			-- Ensure it's marked as a DadView query buffer
+			if not vim.b[bufnr].dadview_query_buffer then
+				vim.b[bufnr].dadview_query_buffer = true
+				keymap.setup_query_buffer_keymaps(bufnr)
+			end
+			
+			return bufnr
 		end
 	end
 

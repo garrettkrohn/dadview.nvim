@@ -119,8 +119,14 @@ require('dadview').setup({
   -- Sidebar position ('left' or 'right')
   position = 'left',
   
+  -- Result buffer split direction ('horizontal' or 'vertical')
+  result_split = 'horizontal',
+  
   -- Automatically open query buffer when connecting
   auto_open_query_buffer = true,
+  
+  -- Reuse most recent query file instead of creating new ones
+  reuse_query_buffer = false,
   
   -- Auto-execute query when saving buffer
   auto_execute_on_save = true,
