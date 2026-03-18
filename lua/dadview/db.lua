@@ -15,6 +15,10 @@ local function load_adapters()
 	adapters.register("postgresql", postgresql)
 	adapters.register("postgres", postgresql) -- Alias
 
+	-- Register JDBC adapter
+	local jdbc = require("dadview.adapters.jdbc")
+	adapters.register("jdbc", jdbc)
+
 	adapters_loaded = true
 end
 

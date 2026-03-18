@@ -59,6 +59,10 @@ vim.g.dbs = {
     name = 'production',
     url = 'postgresql://user:password@prod.example.com:5432/proddb',
   },
+  {
+    name = 'oracle_dev',
+    url = 'jdbc:oracle:thin:@hostname:1521/service_name?user=username&password=password',
+  },
 }
 ```
 
@@ -152,6 +156,10 @@ vim.keymap.set('n', '<leader>dq', '<cmd>DadViewNewQuery<cr>', { desc = 'New quer
 ### Currently Supported
 
 - **PostgreSQL** (`postgresql://` or `postgres://`)
+  - Requires: `psql` command-line tool
+- **Oracle Database via JDBC** (`jdbc:oracle:thin:@host:port/service` or `jdbc:oracle:thin:@host:port:sid`)
+  - Requires: Oracle SQLcl (`sql` command) or SQL*Plus (`sqlplus` command)
+  - Credentials can be passed via URL parameters: `?user=username&password=password`
 
 ### Adding a New Adapter
 

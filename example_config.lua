@@ -49,6 +49,13 @@ return {
 				name = "prod_db",
 				url = string.format("postgresql://username:%s@prod-host:5432/mydb", pass("prod")),
 			},
+			{
+				name = "oracle_dev",
+				url = string.format(
+					"jdbc:oracle:thin:@oracle-host.example.com:1521/ORCL?user=username&password=%s",
+					pass("oracle")
+				),
+			},
 		}
 	end,
 
