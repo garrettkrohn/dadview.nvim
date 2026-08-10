@@ -10,6 +10,10 @@ function M.toggle(connection_name) -- If connection name provided, just connect 
 		local conn = connections.find_connection(connection_name)
 		if conn then
 			connections.set_connection(conn, { open_query_buffer = config.config.auto_open_query_buffer })
+			-- Refresh UI if open
+			if state.state.is_open then
+				M.render()
+			end
 			-- Don't toggle the sidebar when connecting directly
 			return
 		else
@@ -166,6 +170,10 @@ function M.connect_at_cursor()
 	local conn = M.get_connection_at_cursor()
 	if conn then
 		connections.set_connection(conn, { open_query_buffer = config.config.auto_open_query_buffer })
+		-- Refresh UI if open
+		if state.state.is_open then
+			M.render()
+		end
 	else
 		print("DadView: No connection on this line")
 	end

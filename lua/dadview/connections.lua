@@ -67,11 +67,6 @@ function M.set_connection(connection, opts)
 
 	print("DadView: Connected to " .. connection.name)
 
-	-- Refresh UI if open
-	if state.state.is_open then
-		M.render()
-	end
-
 	-- Open new query buffer if requested (default: true)
 	if opts.open_query_buffer ~= false then
 		queryBuffer.new_query_buffer()

@@ -286,10 +286,19 @@ function M.format_results(output, opts)
     if #columns > 0 then
       local formatted = {}
 
+      -- Helper function to pad string to width
+      local function pad_right(str, width)
+        str = tostring(str)
+        if #str >= width then
+          return str:sub(1, width)
+        end
+        return str .. string.rep(' ', width - #str)
+      end
+
       -- Format header
       local header_parts = {}
       for _, col in ipairs(columns) do
-        table.insert(header_parts, string.format(' %-' .. col.width .. 's', col.name))
+        table.insert(header_parts, ' ' .. pad_right(col.name, col.width))
       end
       table.insert(formatted, '|' .. table.concat(header_parts, ' |') .. ' |')
 
@@ -307,7 +316,7 @@ function M.format_results(output, opts)
           local row_parts = {}
           for _, col in ipairs(columns) do
             local value = extract_cell(line, col)
-            table.insert(row_parts, string.format(' %-' .. col.width .. 's', value))
+            table.insert(row_parts, ' ' .. pad_right(value, col.width))
           end
           table.insert(formatted, '|' .. table.concat(row_parts, ' |') .. ' |')
         end
@@ -362,6 +371,111 @@ function M.test_connection(parsed)
     end
     return false, error_msg:match('([^\n]+)')
   end
+end
+
+-- Helper to execute a query and return output
+local function execute_query(parsed, query)
+  -- Create temp file with query
+  local temp_file = vim.fn.tempname() .. '.sql'
+  local file = io.open(temp_file, 'w')
+  if not file then
+    return nil, 'Failed to create temp file'
+  end
+
+  file:write('SET PAGESIZE 50000\n')
+  file:write('SET LINESIZE 32767\n')
+  file:write('SET WRAP OFF\n')
+  file:write('SET TRIMOUT ON\n')
+  file:write('SET TRIMSPOOL ON\n')
+  file:write('SET FEEDBACK OFF\n')
+  file:write('SET HEADING ON\n')
+  file:write('SET ECHO OFF\n')
+  file:write('SET VERIFY OFF\n')
+  file:write('\n')
+  file:write(query)
+  file:write('\nEXIT;\n')
+  file:close()
+
+  local cmd, env = M.build_command(parsed, { file = temp_file })
+  if not cmd then
+    vim.fn.delete(temp_file)
+    return nil, 'Failed to build command'
+  end
+
+  local result = vim.system(cmd, {
+    env = env,
+    text = true,
+  }):wait()
+
+  vim.fn.delete(temp_file)
+
+  if result.code ~= 0 then
+    return nil, result.stderr or result.stdout
+  end
+
+  return result.stdout, nil
+end
+
+-- Get columns for a specific table (for completion)
+function M.get_columns(parsed, opts)
+  opts = opts or {}
+  local schema = opts.schema
+  local table_name = opts.table
+
+  if not table_name then
+    return nil, 'Table name is required'
+  end
+
+  local schemas = require('dadview.completion.schemas')
+  local oracle_schema = schemas.get_module(parsed.raw_url)
+  if not oracle_schema then
+    return nil, 'Schema module not found'
+  end
+
+  local query = oracle_schema.get_columns_query(schema, table_name)
+  local output, err = execute_query(parsed, query)
+
+  if not output then
+    return nil, err
+  end
+
+  return oracle_schema.parse_columns(output)
+end
+
+-- Get list of schemas (for completion)
+function M.get_schemas(parsed)
+  local schemas = require('dadview.completion.schemas')
+  local oracle_schema = schemas.get_module(parsed.raw_url)
+  if not oracle_schema then
+    return nil, 'Schema module not found'
+  end
+
+  local query = oracle_schema.get_schemas_query()
+  local output, err = execute_query(parsed, query)
+
+  if not output then
+    return nil, err
+  end
+
+  return oracle_schema.parse_schemas(output)
+end
+
+-- Get list of tables (for completion)
+function M.get_tables(parsed)
+  local schemas = require('dadview.completion.schemas')
+  local oracle_schema = schemas.get_module(parsed.raw_url)
+  if not oracle_schema then
+    return nil, 'Schema module not found'
+  end
+
+  local query = oracle_schema.get_tables_query()
+  local output, err = execute_query(parsed, query)
+
+  if not output then
+    return nil, err
+  end
+
+  return oracle_schema.parse_tables(output)
 end
 
 return M

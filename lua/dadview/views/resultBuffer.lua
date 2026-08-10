@@ -17,6 +17,12 @@ function M.get_or_create_result_buffer(query_bufnr)
 			vim.cmd(split_cmd)
 			vim.api.nvim_win_set_buf(0, state.state.result_bufnr)
 			state.state.result_winnr = vim.api.nvim_get_current_win()
+
+			-- Set window options for better table viewing
+			vim.api.nvim_win_set_option(state.state.result_winnr, "wrap", false)
+			vim.api.nvim_win_set_option(state.state.result_winnr, "linebreak", false)
+			vim.api.nvim_win_set_option(state.state.result_winnr, "list", false)
+
 			vim.api.nvim_set_current_win(current_win)
 			return state.state.result_bufnr
 		end
@@ -53,6 +59,12 @@ function M.get_or_create_result_buffer(query_bufnr)
 	vim.cmd(split_cmd)
 	vim.api.nvim_win_set_buf(0, result_bufnr)
 	state.state.result_winnr = vim.api.nvim_get_current_win()
+
+	-- Set window options for better table viewing
+	vim.api.nvim_win_set_option(state.state.result_winnr, "wrap", false)
+	vim.api.nvim_win_set_option(state.state.result_winnr, "linebreak", false)
+	vim.api.nvim_win_set_option(state.state.result_winnr, "list", false)
+
 	vim.api.nvim_set_current_win(current_win)
 
 	return result_bufnr

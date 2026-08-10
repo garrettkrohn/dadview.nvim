@@ -47,13 +47,18 @@ function M.new_query_buffer()
 			-- Open the existing file
 			vim.cmd("edit " .. vim.fn.fnameescape(recent_file))
 			local bufnr = vim.api.nvim_get_current_buf()
-			
+
 			-- Ensure it's marked as a DadView query buffer
 			if not vim.b[bufnr].dadview_query_buffer then
 				vim.b[bufnr].dadview_query_buffer = true
 				keymap.setup_query_buffer_keymaps(bufnr)
 			end
-			
+
+			-- Set database URL for completion
+			if state.state.current_connection and state.state.current_connection.url then
+				vim.b[bufnr].db = state.state.current_connection.url
+			end
+
 			return bufnr
 		end
 	end
@@ -78,6 +83,11 @@ function M.new_query_buffer()
 
 	-- Mark this as a DadView query buffer
 	vim.b[bufnr].dadview_query_buffer = true
+
+	-- Set database URL for completion (compatible with vim-dadbod convention)
+	if state.state.current_connection and state.state.current_connection.url then
+		vim.b[bufnr].db = state.state.current_connection.url
+	end
 
 	-- Set buffer options - filetype last to trigger autocmds properly
 	vim.api.nvim_buf_set_option(bufnr, "buftype", "")

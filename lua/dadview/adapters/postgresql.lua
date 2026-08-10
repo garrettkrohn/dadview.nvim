@@ -206,16 +206,16 @@ function M.get_tables(parsed)
   })
   table.insert(cmd, '-t')  -- Tuples only
   table.insert(cmd, '-A')  -- Unaligned
-  
+
   local result = vim.system(cmd, {
     env = env,
     text = true,
   }):wait()
-  
+
   if result.code ~= 0 then
     return nil, result.stderr
   end
-  
+
   local tables = {}
   for line in result.stdout:gmatch('[^\n]+') do
     local schema, name = line:match('^([^|]+)|([^|]+)')
@@ -223,8 +223,62 @@ function M.get_tables(parsed)
       table.insert(tables, { schema = schema, name = name })
     end
   end
-  
+
   return tables
+end
+
+-- Get columns for a specific table (for completion)
+function M.get_columns(parsed, opts)
+  opts = opts or {}
+  local schema = opts.schema
+  local table_name = opts.table
+
+  if not table_name then
+    return nil, 'Table name is required'
+  end
+
+  local schemas = require('dadview.completion.schemas')
+  local pg_schema = schemas.get_module(parsed.raw_url)
+  if not pg_schema then
+    return nil, 'Schema module not found'
+  end
+
+  local query = pg_schema.get_columns_query(schema, table_name)
+  local cmd, env = M.build_command(parsed, { query = query })
+
+  local result = vim.system(cmd, {
+    env = env,
+    text = true,
+  }):wait()
+
+  if result.code ~= 0 then
+    return nil, result.stderr
+  end
+
+  return pg_schema.parse_columns(result.stdout)
+end
+
+-- Get list of schemas (for completion)
+function M.get_schemas(parsed)
+  local schemas = require('dadview.completion.schemas')
+  local pg_schema = schemas.get_module(parsed.raw_url)
+  if not pg_schema then
+    return nil, 'Schema module not found'
+  end
+
+  local query = pg_schema.get_schemas_query()
+  local cmd, env = M.build_command(parsed, { query = query })
+
+  local result = vim.system(cmd, {
+    env = env,
+    text = true,
+  }):wait()
+
+  if result.code ~= 0 then
+    return nil, result.stderr
+  end
+
+  return pg_schema.parse_schemas(result.stdout)
 end
 
 return M

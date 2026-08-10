@@ -13,6 +13,7 @@ A modern, pure Lua database UI for Neovim. Browse connections, execute queries, 
 - 🛑 **Query Cancellation** - Cancel long-running queries with `<C-c>`
 - 📊 **Result Buffers** - Dedicated buffers for query results
 - 🔄 **Auto-execute on Save** - Optional auto-execution when saving query buffers
+- 🔮 **SQL Completion** - Context-aware completion for tables, columns, schemas, and keywords (requires [blink.cmp](https://github.com/Saghen/blink.cmp))
 
 ## 📦 Installation
 
@@ -134,8 +135,44 @@ require('dadview').setup({
   
   -- Auto-execute query when saving buffer
   auto_execute_on_save = true,
+
+  -- SQL completion configuration
+  completion = {
+    enabled = true,
+    cache_ttl = 300,
+    keywords_case = 'upper',
+  },
 })
 ```
+
+### SQL Completion
+
+DadView provides built-in SQL completion support for [blink.cmp](https://github.com/Saghen/blink.cmp). See [docs/completion.md](docs/completion.md) for detailed setup instructions.
+
+**Quick setup:**
+
+```lua
+require('blink.cmp').setup({
+  sources = {
+    providers = {
+      dadview = {
+        name = "dadview",
+        module = "dadview.completion.blink",
+        score_offset = 10,
+      },
+    },
+    default = { 'lsp', 'path', 'snippets', 'buffer', 'dadview' },
+  },
+})
+```
+
+**Features:**
+- Table name completion (after FROM, JOIN, etc.)
+- Column name completion (after `table.`)
+- Schema completion
+- SQL keyword completion
+- Smart caching with 5-minute TTL
+- Async metadata fetching
 
 ### Setting up Keymaps
 

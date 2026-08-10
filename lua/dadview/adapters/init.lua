@@ -4,6 +4,15 @@ local M = {}
 M.adapters = {}
 
 -- Register a new adapter
+-- Required methods:
+--   - parse_url(url) - Parse database URL into connection parameters
+--   - build_command(parsed, opts) - Build command-line invocation
+--   - format_results(output, opts) - Format query results
+-- Optional methods (for completion support):
+--   - get_tables(parsed) - Get list of tables { schema, name }
+--   - get_columns(parsed, opts) - Get columns for table (opts: schema, table)
+--   - get_schemas(parsed) - Get list of schemas
+--   - test_connection(parsed) - Test database connection
 function M.register(scheme, adapter)
   if not adapter.parse_url then
     error('Adapter must implement parse_url()')
@@ -14,7 +23,7 @@ function M.register(scheme, adapter)
   if not adapter.format_results then
     error('Adapter must implement format_results()')
   end
-  
+
   M.adapters[scheme] = adapter
 end
 
